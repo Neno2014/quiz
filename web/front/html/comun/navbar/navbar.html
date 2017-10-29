@@ -1,0 +1,68 @@
+<style>
+.brand-logo{
+	margin-left:62px;
+}
+#btn-menu-lateral{
+	position:absolute;
+	top:12px;
+	left:12px;
+}
+#slide-out{
+	border-right:1px solid rgba(0,0,255,0.5);
+}
+
+</style>
+<ul id='menu-usuario' class='dropdown-content solo-loged'>
+  <li><a href='#!'>one</a></li>
+  <li class='divider'></li>
+  <li><a href='/logout'>Cerrar sesión</a></li>
+</ul>
+
+<nav id='navbar-superior' class='teal'>
+	<div class='nav-wrapper'>
+		<ul id='nav-mobile' class='right'>
+			<li><a id='btn-menu-usuario' class='solo-loged dropdown-button' data-activates='menu-usuario' ><span id='nombre-usuario' ></span> <i class='material-icons right'>arrow_drop_down</i></a></li>
+			<li><a class='no-loged' href='/login'>Iniciar sesion</a></li>
+			<li><a href='/crear-cuenta' class='no-loged'>Crear una cuenta</a></li>
+		</ul>
+	</div>
+</nav>
+
+<ul id='slide-out' class='side-nav solo-loged '>
+	<li>
+		<div class='user-view'>
+			<div class='background'>
+				<img src='/img/orange.png'>
+			</div>
+			<a href='#!user'><img class='circle' src='/img/user.png'></a>
+			<a href='#!name'><span id='lat-nombre-usuario' class='name solo-loged'>John Doe</span></a>
+			<a href='#!email'><span id='lat-email-usuario' class='white-text email solo-loged'>jdandturk@gmail.com</span></a>
+		</div>
+	</li>
+	<li><a href='/examenes' class='light-blue-text'>Examenes</a></li>
+</ul>
+<button id='btn-menu-lateral' data-activates='slide-out' class='btn-floating solo-loged teal'><i class='material-icons'>menu</i></button>
+
+<script>
+$(document).ready(function(){
+	if(Quiz.usuario){
+		$("#btn-menu-lateral").sideNav();
+		$('.no-loged').remove();
+		$('#nombre-usuario').text(Quiz.usuario.nombre);
+		$('#lat-nombre-usuario').text(Quiz.usuario.nombre);
+		$('#lat-email-usuario').text(Quiz.usuario.email);
+		$("#btn-menu-usuario").dropdown({
+			inDuration: 300,
+			outDuration: 225,
+			constrainWidth: false,
+			hover: true,
+			belowOrigin: true,
+			alignment: 'left',
+			stopPropagation: false
+		});
+	}else{
+		$('.solo-loged').remove();
+	}
+	
+});
+</script>

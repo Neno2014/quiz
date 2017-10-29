@@ -1,0 +1,4 @@
+RewriteEngine on
+
+RewriteRule ^api/([A-Za-z0-9-_]+)/?$ api.php?comando=$1 [NC,QSA]
+RewriteRule ^([_A-Za-z0-9-/]+)/?$ paginas.php?pagina=$1 [NC,QSA]
