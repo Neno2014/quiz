@@ -1,0 +1,183 @@
+<style>
+.pregunta{
+	border-bottom:1px solid rgba(0,0,0,0.05);
+	padding:5px;
+}
+.pregunta:hover{
+	background-color:rgba(0,0,0,0.05);
+}
+</style>
+<div class='container'>
+	<div class='row'>
+		<div class='col s10 offset-s1'>
+			<h1 class='center-align teal-text'>Mis preguntas</h1>
+		</div>
+	</div>
+	<div class='row'>
+		<div class='col s10 offset-s1'>
+			<div id='contenedor-preguntas'>
+				
+			</div>
+		</div>
+	</div>
+</div>
+
+<div style='display:none;'>
+	<div id='m-pregunta' class='pregunta'>
+		<div class='row'>
+			<div class='col s12 m10'>
+				<span class='id'></span>- 
+				<b class='pregunta-texto'></b>
+				<ul class='contenedor-respuestas browser-default'>
+				</ul>
+			</div>
+			<div class='col s12 m2'>
+				<div class='right'>
+					<button class='btn-floating green waves-effect btn-editar' title='Editar esta pregunta'><i class='material-icons'>edit</i></button>
+					<button class='btn-floating red waves-effect btn-eliminar' title='Eliminar esta pregunta'><i class='material-icons'>delete</i></button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<li id='m-respuesta'>
+		<span class='respuesta'></span>
+	</li>
+	<div id='m-respuesta-modal'>
+		<div class='row'>
+			<div class='col s12 m10'>
+				<input type='text' class='respuesta'></input>
+				<p class='correcta'>
+					<input type="checkbox" class="filled-in" id="filled-in-box" />
+					<label for="filled-in-box">Correcta</label>
+				</p>
+			</div>
+			<div class='col s12 m2'>
+				<button class='btn-floating red waves-effect btn-eliminar' title='Eliminar esta pregunta'><i class='material-icons'>delete</i></button>
+			</div>
+		</div>
+	</div>
+	
+</div>
+
+
+<div id="modal-editar-pregunta" class="modal modal-fixed-footer">
+	<div class="modal-content">
+		<h4>Editar pregunta</h4>
+		<div class="row">
+			<div class="input-field col s12">
+				<textarea id="input-pregunta" class="materialize-textarea"></textarea>
+				<label class="active" for="input-pregunta">Pregunta</label>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col s12">
+				<h5>Respuestas</h5>
+				<div id='modal-editar-respuestas'></div>
+				<button id='btn-nueva-respuesta' class='btn waves-effect'>Nueva respuesta</button>
+			</div>
+		</div>
+		
+	</div>
+	<div class="modal-footer">
+		<button class="waves-effect btn green btn-guardar">Guardar</button>
+		<button class="modal-action modal-close waves-effect waves-green btn-flat ">Cancelar</button>
+	</div>
+</div>
+
+<div id="modal-eliminar-pregunta" class="modal modal-fixed-footer">
+	<div class="modal-content">
+		<h4>Modal Header</h4>
+		<p>A bunch of text</p>
+	</div>
+	<div class="modal-footer">
+		<button class="modal-action modal-close waves-effect waves-green btn-flat ">Agree</button>
+	</div>
+</div>
+
+<script>
+$(document).ready(function(){
+	console.log(Quiz);
+	
+	$('#modal-editar-pregunta').modal();
+	$('#modal-eliminar-pregunta').modal();
+	
+	Quiz.datos.preguntas.forEach(function(e,i){
+		var pregunta = $('#m-pregunta').clone().attr('id','pregunta-'+e.id);
+		
+		pregunta.find('.id').text(e.id);
+		pregunta.find('.pregunta-texto').text(e.pregunta);
+		
+		pregunta.find('.btn-editar').on('click', function(){
+			$.post('/api/get_datos_pregunta',{idPregunta:e.id},function(r){
+				$('#modal-editar-pregunta').find('.btn-guardar').off();
+				var res = JSON.parse(r);
+				$('#input-pregunta').val(res.pregunta);
+				$('#modal-editar-respuestas').empty();
+				res.respuestas.forEach(function(e,i){
+					var respuesta = getRespuestaModal(e);
+					$('#modal-editar-respuestas').append(respuesta);
+				});
+				
+				//nueva respuesta
+				$('#btn-nueva-respuesta').on('click', function(){
+					var respuesta = getRespuestaModal({id:-1,respuesta:'Nueva respuesta',correcta:true});
+					$('#modal-editar-respuestas').append(respuesta);
+				});
+				
+				Materialize.updateTextFields();
+				$('#modal-editar-pregunta').find('.btn-guardar').on('click', function(){
+					//guardar pregunta
+					var respuestas = [];
+					var pregunta = $('#input-pregunta').val();
+					$('#modal-editar-pregunta').find('.respuesta').each(function(){
+						var id = $(this).attr('id-respuesta');
+						var respuesta = $(this).val();
+						var correcta = $('#correcta-'+id).prop('checked');
+						respuestas.push({id:id, respuesta:respuesta, correcta:correcta});
+					});
+					console.log(respuestas);
+					$.post('/api/editar_pregunta',{id:e.id,pregunta:pregunta,respuestas:respuestas},function(r){
+						window.location.reload();
+					});
+				});
+				$('#modal-editar-pregunta').modal('open');
+			});
+		});
+		pregunta.find('.btn-eliminar').on('click', function(){
+			$('#modal-eliminar-pregunta').modal('open');
+		});
+		
+		$('#contenedor-preguntas').append(pregunta);
+	});
+	Quiz.datos.respuestas.forEach(function(e,i){
+		var respuesta = $('#m-respuesta').clone().attr('id','respuesta-'+e.id);
+		
+		respuesta.find('.respuesta').text(e.respuesta);
+		
+		$('#pregunta-'+e.pregunta).find('.contenedor-respuestas').append(respuesta);
+	});
+	
+});
+
+function getRespuestaModal(e){
+	var respuesta = $('#m-respuesta-modal').clone().attr('id','respuesta-modal-'+e.id);
+					
+	respuesta.find('.respuesta').val(e.respuesta);
+	respuesta.find('.respuesta').attr('id-respuesta',e.id);
+	respuesta.find('.correcta').find('input').attr('id','correcta-'+e.id);
+	respuesta.find('.correcta').find('label').attr('for','correcta-'+e.id);
+	
+	respuesta.find('.correcta').find('input').prop('checked', e.correcta);
+	respuesta.find('.btn-eliminar').on('click', function(){
+		$('#modal-editar-pregunta').find('.btn-guardar').on('click',function(){
+			$.post('/api/eliminar_respuesta',{id:e.id},function(){
+				
+			});
+		});
+		respuesta.remove();
+	});
+	
+	
+	return respuesta;
+}
+</script>
