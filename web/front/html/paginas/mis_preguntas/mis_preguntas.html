@@ -1,4 +1,12 @@
 <style>
+.oculto{
+	display:none;
+}
+.respuesta-modal{
+	border:1px solid rgba(0,0,0,0.1);
+	padding:5px;
+	margin-bottom:5px;
+}
 .pregunta{
 	border-bottom:1px solid rgba(0,0,0,0.05);
 	padding:5px;
@@ -9,15 +17,32 @@
 </style>
 <div class='container'>
 	<div class='row'>
-		<div class='col s10 offset-s1'>
+		<div class='col s12 l10 offset-l1'>
 			<h1 class='center-align teal-text'>Mis preguntas</h1>
 		</div>
 	</div>
 	<div class='row'>
-		<div class='col s10 offset-s1'>
-			<div id='contenedor-preguntas'>
-				
-			</div>
+		<div class="input-field col s12 l5 offset-l1">
+			<select id='select-asignatura'>
+				<option value="-1" selected>Todas</option>
+				<option value="null">Sin asignatura</option>
+			</select>
+			<label>Asignatura</label>
+		</div>
+		<div class="input-field col s12 l5">
+			<select id='select-tema'>
+			</select>
+			<label>Tema</label>
+		</div>
+	</div>
+	<div class='row'>
+		<div class='col s12 l10 offset-l1'>
+			<button id='btn-nueva-pregunta' class='btn waves-effect'>Nueva pregunta</button>
+		</div>
+	</div>
+	<div class='row'>
+		<div class='col s12 l10 offset-l1'>
+			<div id='contenedor-preguntas'></div>
 		</div>
 	</div>
 </div>
@@ -26,8 +51,7 @@
 	<div id='m-pregunta' class='pregunta'>
 		<div class='row'>
 			<div class='col s12 m10'>
-				<span class='id'></span>- 
-				<b class='pregunta-texto'></b>
+				<h5 class='pregunta-texto'></h5>
 				<ul class='contenedor-respuestas browser-default'>
 				</ul>
 			</div>
@@ -40,9 +64,9 @@
 		</div>
 	</div>
 	<li id='m-respuesta'>
-		<span class='respuesta'></span>
+		<span class='respuesta'></span><i class='material-icons'>close</i>
 	</li>
-	<div id='m-respuesta-modal'>
+	<div id='m-respuesta-modal' class='respuesta-modal'>
 		<div class='row'>
 			<div class='col s12 m10'>
 				<input type='text' class='respuesta'></input>
@@ -52,7 +76,7 @@
 				</p>
 			</div>
 			<div class='col s12 m2'>
-				<button class='btn-floating red waves-effect btn-eliminar' title='Eliminar esta pregunta'><i class='material-icons'>delete</i></button>
+				<button class='btn-floating red waves-effect btn-eliminar right' title='Eliminar esta respuesta'><i class='material-icons'>delete</i></button>
 			</div>
 		</div>
 	</div>
@@ -60,7 +84,7 @@
 </div>
 
 
-<div id="modal-editar-pregunta" class="modal modal-fixed-footer">
+<div id="modal-editar-pregunta" class="modal">
 	<div class="modal-content">
 		<h4>Editar pregunta</h4>
 		<div class="row">
@@ -73,7 +97,7 @@
 			<div class="col s12">
 				<h5>Respuestas</h5>
 				<div id='modal-editar-respuestas'></div>
-				<button id='btn-nueva-respuesta' class='btn waves-effect'>Nueva respuesta</button>
+				<button id='btn-nueva-respuesta' id-actual='-1' class='btn waves-effect'>Nueva respuesta</button>
 			</div>
 		</div>
 		
@@ -84,13 +108,14 @@
 	</div>
 </div>
 
-<div id="modal-eliminar-pregunta" class="modal modal-fixed-footer">
+<div id="modal-eliminar-pregunta" class="modal">
 	<div class="modal-content">
-		<h4>Modal Header</h4>
-		<p>A bunch of text</p>
+		<h4 class='center-align red-text'>¿Seguro que quiere eliminar la pregunta?</h4>
+		<p class='pregunta-titulo'></p>
 	</div>
 	<div class="modal-footer">
-		<button class="modal-action modal-close waves-effect waves-green btn-flat ">Agree</button>
+		<button id='btn-confirmar-eliminar-pregunta' class="modal-action modal-close waves-effect waves-green btn red">Eliminar</button>
+		<button class="modal-action modal-close waves-effect waves-green btn-flat ">Cancelar</button>
 	</div>
 </div>
 
@@ -101,60 +126,76 @@ $(document).ready(function(){
 	$('#modal-editar-pregunta').modal();
 	$('#modal-eliminar-pregunta').modal();
 	
+	$('#btn-nueva-pregunta').on('click', function(){
+		var tema = $('#select-tema').val();
+		console.log(tema);
+		$.post('/api/crear_pregunta',{pregunta:'Nueva pregunta'},function(r){
+			var preg = JSON.parse(r);
+			var pregunta = getPregunta(preg);
+			$('#contenedor-preguntas').prepend(pregunta);
+		});
+	});
+	
 	Quiz.datos.preguntas.forEach(function(e,i){
-		var pregunta = $('#m-pregunta').clone().attr('id','pregunta-'+e.id);
-		
-		pregunta.find('.id').text(e.id);
-		pregunta.find('.pregunta-texto').text(e.pregunta);
-		
-		pregunta.find('.btn-editar').on('click', function(){
-			$.post('/api/get_datos_pregunta',{idPregunta:e.id},function(r){
-				$('#modal-editar-pregunta').find('.btn-guardar').off();
-				var res = JSON.parse(r);
-				$('#input-pregunta').val(res.pregunta);
-				$('#modal-editar-respuestas').empty();
-				res.respuestas.forEach(function(e,i){
-					var respuesta = getRespuestaModal(e);
-					$('#modal-editar-respuestas').append(respuesta);
-				});
-				
-				//nueva respuesta
-				$('#btn-nueva-respuesta').on('click', function(){
-					var respuesta = getRespuestaModal({id:-1,respuesta:'Nueva respuesta',correcta:true});
-					$('#modal-editar-respuestas').append(respuesta);
-				});
-				
-				Materialize.updateTextFields();
-				$('#modal-editar-pregunta').find('.btn-guardar').on('click', function(){
-					//guardar pregunta
-					var respuestas = [];
-					var pregunta = $('#input-pregunta').val();
-					$('#modal-editar-pregunta').find('.respuesta').each(function(){
-						var id = $(this).attr('id-respuesta');
-						var respuesta = $(this).val();
-						var correcta = $('#correcta-'+id).prop('checked');
-						respuestas.push({id:id, respuesta:respuesta, correcta:correcta});
-					});
-					console.log(respuestas);
-					$.post('/api/editar_pregunta',{id:e.id,pregunta:pregunta,respuestas:respuestas},function(r){
-						window.location.reload();
-					});
-				});
-				$('#modal-editar-pregunta').modal('open');
-			});
-		});
-		pregunta.find('.btn-eliminar').on('click', function(){
-			$('#modal-eliminar-pregunta').modal('open');
-		});
-		
+		var pregunta = getPregunta(e);
 		$('#contenedor-preguntas').append(pregunta);
 	});
 	Quiz.datos.respuestas.forEach(function(e,i){
 		var respuesta = $('#m-respuesta').clone().attr('id','respuesta-'+e.id);
 		
 		respuesta.find('.respuesta').text(e.respuesta);
+		if(e.correcta){
+			respuesta.find('.material-icons').text('check');
+			respuesta.find('.material-icons').addClass('green-text');
+		}else{
+			respuesta.find('.material-icons').text('close');
+			respuesta.find('.material-icons').addClass('red-text');
+		}
 		
 		$('#pregunta-'+e.pregunta).find('.contenedor-respuestas').append(respuesta);
+	});
+	
+	Quiz.datos.asignaturas.forEach(function(e,i){
+		var option = $('<option>').attr('value',e.id).text(e.nombre);
+		$('#select-asignatura').append(option);
+	});
+	$('#select-asignatura').material_select();
+	$('#select-asignatura').on('change', function(){
+		
+		$('#select-tema').material_select('destroy');
+		
+		var asignatura = $(this).val();
+		if(asignatura=="null"){
+			$('.pregunta:not(.tema-null)').addClass('oculto');
+			$('.pregunta.tema-null').removeClass('oculto');
+		}else if(asignatura==-1){
+			//todas
+			$('.pregunta').removeClass('oculto');
+		}else{
+			$('.pregunta:not(.asignatura-'+asignatura+')').addClass('oculto');
+			$('.pregunta.asignatura-'+asignatura).removeClass('oculto');
+			$.post('/api/get_temas_asignatura',{asignatura:asignatura},function(r){
+				var temas = JSON.parse(r);
+				$('#select-tema').empty();
+				$('#select-tema').append($('<option value="-1" selected>Todos</option>'));
+				temas.forEach(function(e,i){
+					var option = $('<option>').attr('value',e.id).text(e.nombre);
+					$('#select-tema').append(option);
+				});
+				$('#select-tema').material_select();
+				$('#select-tema').on('change',function(){
+					//$('.pregunta.tema-'+tema).addClass('oculto');
+					var tema = $(this).val();
+					if(tema != -1){
+						$('.pregunta:not(.tema-'+tema+')').addClass('oculto');
+						$('.pregunta.tema-'+tema).removeClass('oculto');
+					}else{
+						$('.pregunta.asignatura-'+asignatura).removeClass('oculto');
+						$('.pregunta:not(.asignatura-'+asignatura+')').addClass('oculto');
+					}
+				});
+			});
+		}
 	});
 	
 });
@@ -180,4 +221,70 @@ function getRespuestaModal(e){
 	
 	return respuesta;
 }
+
+function getPregunta(e){
+	var pregunta = $('#m-pregunta').clone().attr('id','pregunta-'+e.id);
+		
+	//pregunta.find('.id').text(e.id);
+	pregunta.find('.pregunta-texto').text(e.pregunta);
+	pregunta.addClass('tema-'+e.tema);
+	pregunta.addClass('asignatura-'+e.asignatura);
+	
+	pregunta.find('.btn-eliminar').on('click', function(){
+		$('#modal-eliminar-pregunta').modal('open');
+		$('#modal-eliminar-pregunta').find('.pregunta-titulo').text(e.pregunta);
+		$('#btn-confirmar-eliminar-pregunta').off().on('click',function(){
+			$.post('/api/eliminar_pregunta',{id:e.id},function(){
+				pregunta.remove();
+				$('#modal-eliminar-pregunta').modal('close');
+			});
+		});
+	});
+	
+	pregunta.find('.btn-editar').on('click', function(){
+		$.post('/api/get_datos_pregunta',{idPregunta:e.id},function(r){
+			$('#modal-editar-pregunta').find('.btn-guardar').off();
+			var res = JSON.parse(r);
+			$('#input-pregunta').val(res.pregunta);
+			$('#modal-editar-respuestas').empty();
+			res.respuestas.forEach(function(e,i){
+				var respuesta = getRespuestaModal(e);
+				$('#modal-editar-respuestas').append(respuesta);
+			});
+			
+			//nueva respuesta
+			$('#btn-nueva-respuesta').off().on('click', function(){
+				var idNueva = $('#btn-nueva-respuesta').attr('id-actual')-1;
+				$('#btn-nueva-respuesta').attr('id-actual',idNueva);
+				var respuesta = getRespuestaModal({id:idNueva,respuesta:'Nueva respuesta',correcta:true});
+				$('#modal-editar-respuestas').append(respuesta);
+			});
+			
+			Materialize.updateTextFields();
+			$('#modal-editar-pregunta').find('.btn-guardar').on('click', function(){
+				//guardar pregunta
+				var respuestas = [];
+				var pregunta = $('#input-pregunta').val();
+				$('#modal-editar-pregunta').find('.respuesta').each(function(){
+					var id = $(this).attr('id-respuesta');
+					var respuesta = $(this).val();
+					var correcta = $('#correcta-'+id).prop('checked');
+					respuestas.push({id:id, respuesta:respuesta, correcta:correcta});
+				});
+				console.log(respuestas);
+				$.post('/api/editar_pregunta',{id:e.id,pregunta:pregunta,respuestas:respuestas},function(r){
+					window.location.reload();
+				});
+			});
+			$('#modal-editar-pregunta').modal('open');
+		});
+	});
+	pregunta.find('.btn-eliminar').on('click', function(){
+		$('#modal-eliminar-pregunta').modal('open');
+	});
+	
+	return pregunta;
+}
+
+
 </script>

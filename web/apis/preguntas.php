@@ -2,8 +2,15 @@
 
 if ($comando == "crear_pregunta"){
 	if(isset($_REQUEST["pregunta"])){
-		$resultado = dbQuery("SELECT api.crear_pregunta(?,null);", array($_REQUEST["pregunta"]));
-		echo json_encode($resultado);
+		$resultado = dbQuery("SELECT api.crear_pregunta(?,null) as id;", array($_REQUEST["pregunta"]));
+		$preg = dbQuery("SELECT * FROM api.preguntas where id=?;", array($resultado[0]["id"]));
+		echo json_encode($preg[0]);
+	}
+}
+
+if ($comando == "eliminar_pregunta"){
+	if(isset($_REQUEST["id"])){
+		dbQuery("SELECT api.eliminar_pregunta(?);", array($_REQUEST["id"]));
 	}
 }
 
@@ -34,7 +41,7 @@ if ($comando == "editar_pregunta"){
 		beginTransaction();
 		$edPregunta = dbQuery("SELECT api.editar_pregunta(?,?,null);", array($_REQUEST["id"], $_REQUEST["pregunta"]));
 		foreach($_REQUEST["respuestas"] as $respuesta){
-			if($respuesta["id"]==-1){
+			if($respuesta["id"]<0){
 				$edRespuesta = dbQuery("SELECT api.crear_respuesta(?,?,?);", array($_REQUEST["id"], $respuesta["respuesta"], $respuesta["correcta"]));
 			}else{
 				$edRespuesta = dbQuery("SELECT api.editar_respuesta(?,?,?);", array($respuesta["id"], $respuesta["respuesta"], $respuesta["correcta"]));
